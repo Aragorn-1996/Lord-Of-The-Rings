@@ -130,6 +130,8 @@
   .banner img {
     transform: scale(1.10);
     transform-origin: center center;
+    /* Slightly reframe the source so the woman and man sit more centrally,
+       while keeping the existing slow zoom animation intact. */
     object-position: 55% 50%;
     animation: gentleCoverZoom 15s ease-in-out infinite alternate;
     will-change: transform;
@@ -207,6 +209,7 @@
     to   { opacity: .88; transform: translateY(0); }
   }
 
+  /* Glow changes only; the quote opacity itself does not loop. */
   @keyframes quoteGlow {
     0%, 100% { text-shadow: 0 0 4px rgba(255,250,238,.28), 0 0 10px rgba(255,250,238,.18); }
     50%      { text-shadow: 0 0 8px rgba(255,250,238,.82), 0 0 18px rgba(255,250,238,.55), 0 0 30px rgba(255,250,238,.28); }
@@ -275,7 +278,7 @@
 </div>
 
 <iframe class="music" id="music"
-  src="https://www.youtube.com/embed/2mu6faleFUg?autoplay=1&mute=1&loop=1&playlist=2mu6faleFUg&controls=0&rel=0&playsinline=1&enablejsapi=1"
+  src="https://www.youtube.com/embed/2mu6faleFUg?autoplay=1&mute=0&loop=1&playlist=2mu6faleFUg&controls=0&rel=0&playsinline=1&enablejsapi=1"
   title="Background music" allow="autoplay; encrypted-media; picture-in-picture"
   tabindex="-1"></iframe>
 
@@ -295,7 +298,7 @@ function setCover(url) {
 setCover(CONFIG.cover);
 document.getElementById("photo").src = CONFIG.avatar;
 
-/* Off-white hearts fade in/out along the cover edges */
+/* Off-white hearts fade in/out along the cover edges (not over the images). */
 const edgeHeartPositions = [
   [8, 0, 29, -12], [30, 0, 26, 10], [67, 0, 28, 8], [92, 0, 31, -8],
   [100, 27, 27, 12], [100, 73, 30, -10], [82, 100, 27, 9], [54, 100, 30, -12],
@@ -386,6 +389,7 @@ function glitter(canvas, count, falling = false) {
       heartPath(ctx, px, py, s);
       ctx.fill();
 
+      /* tiny halo for a soft, cinematic sparkle */
       ctx.shadowColor = `rgba(${h.c},${a * .45})`;
       ctx.shadowBlur = Math.max(1, s * .7);
       heartPath(ctx, px, py, s * .72);
@@ -442,20 +446,15 @@ function coverGlitter(canvas, count = 52) {
 }
 coverGlitter(document.getElementById("glitterCover"));
 
-/* ---------- Autoplay & Unmute handling ---------- */
+// YouTube autoplay is subject to the browser's autoplay policy.
+// The first user interaction also sends a play/unmute command.
 const music = document.getElementById("music");
-
-function unmuteAudio() {
-  if (!music || !music.contentWindow) return;
-  music.contentWindow.postMessage(JSON.stringify({ event: "command", func: "unMute", args: [] }), "*");
-  music.contentWindow.postMessage(JSON.stringify({ event: "command", func: "playVideo", args: [] }), "*");
-  music.contentWindow.postMessage(JSON.stringify({ event: "command", func: "setVolume", args: [100] }), "*");
+function startMusic() {
+  music.contentWindow?.postMessage(JSON.stringify({ event: "command", func: "playVideo", args: [] }), "*");
+  music.contentWindow?.postMessage(JSON.stringify({ event: "command", func: "unMute", args: [] }), "*");
 }
-
-// Global user interaction triggers unmuting audio across all browsers
-['click', 'touchstart', 'pointerdown', 'keydown'].forEach(evt => {
-  window.addEventListener(evt, unmuteAudio, { once: true });
-});
+window.addEventListener("pointerdown", startMusic, { once: true });
+window.addEventListener("keydown", startMusic, { once: true });
 </script>
 </body>
 </html>
